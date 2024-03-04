@@ -65,17 +65,18 @@ Navigate to Administrator -> OperatorHub -> Search for Confluent -> and press in
 
 ### Internet Connection (with Helm)
 ```
-oc new-project confluent
-
+helm repo add confluentinc https://packages.confluent.io/helm
 helm repo update
 
-# namespaced
+oc new-project confluent
+
+# namespaced - operator is installed in confluent namespace and wes specify namespaces for the operator to watch
 helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes \
 --set podSecurity.enabled=false --namespace confluent \
---set namespaceList="{confluent,cfk,mrc-kafka,mrc-broker}" \
+--set namespaceList="{confluent,cfk,mrc-kafka,mrc-broker}" \ 
 --set namespaced=true
 
-# not namespaced
+# not namespaced - operator is installed in confluent namespace but will watch the all namespaces
 helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --set podSecurity.enabled=false --namespace confluent --set namespaced=false
 ```
 
@@ -85,25 +86,27 @@ helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes 
 On your jump host, install docker, helm, oc, and other CLI tools.
 
 ```
-# copy to your work directory and unzip
-unzip confluent-for-kubernetes-2.7.3-chart.zip
+# copy to your work directory and untar
+curl -O https://confluent-for-kubernetes.s3-us-west-1.amazonaws.com/confluent-for-kubernetes-2.8.0.tar.gz
+tar zxvf confluent-for-kubernetes-2.8.0.tar.gz
+
 
 export CFK_NAMESPACE=confluent
 export REGISTRY_BASE=<PRIVATE_DOCKER_REGISTRY>
 
 # Tag and push if this image isn't at your registry yet
-# docker pull docker.io/confluentinc/confluent-operator:0.824.40
-# docker tag docker.io/confluentinc/confluent-operator:0.824.40 $REGISTRY_BASE/confluentinc/confluent-operator:0.824.40
-# docker push $REGISTRY_BASE/confluentinc/confluent-operator:0.824.40
+# docker pull docker.io/confluentinc/confluent-operator:0.921.2
+# docker tag docker.io/confluentinc/confluent-operator:0.921.2 $REGISTRY_BASE/confluentinc/confluent-operator:0.921.2
+# docker push $REGISTRY_BASE/confluentinc/confluent-operator:0.921.2
 
-# create namespace
+# create namespace for confluent
 oc new-project $CFK_NAMESPACE
 
 # we can either use values.yaml to set these, or directly in the helm command
 
-# Point to bofa registry as well as allow operator to run with default SCC
+# Point to your private registry as well as allow operator to run with default SCC
 helm upgrade --install confluent-operator \
-  ./confluent-for-kubernetes \
+  ./confluent-for-kubernetes-2.8.0-20240214/helm/confluent-for-kubernetes \
   --namespace=$CFK_NAMESPACE \
   --set podSecurity.enabled=false \
   --set image.registry=$REGISTRY_BASE
