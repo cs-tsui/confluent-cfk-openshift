@@ -68,6 +68,42 @@ spec:
         type: route
         route:
           domain: apps-crc.testing
+      authentication:
+        type: ldap
+        jaasConfig:
+          secretRef: credential
+  authorization:
+    type: rbac
+    superUsers:
+    - User:kafka
+  services:
+    mds:
+      tls:
+        enabled: true
+      tokenKeyPair:
+        secretRef: mds-token
+      externalAccess:
+        type: route
+        route:
+          domain: apps-crc.testing
+      provider:
+        type: ldap
+        ldap:
+          address: ldap://ldap.forumsys.com:389
+          authentication:
+            type: simple
+            simple:
+              secretRef: credential
+          configurations:
+            groupNameAttribute: cn
+            groupObjectClass: group
+            groupMemberAttribute: member
+            groupMemberAttributePattern: CN=(.*),DC=example,DC=com
+            groupSearchBase: dc=example,dc=com
+            userNameAttribute: cn
+            userMemberOfAttributePattern: CN=(.*),DC=example,DC=com
+            userObjectClass: organizationalRole
+            userSearchBase: dc=example,dc=com
 ---
 apiVersion: platform.confluent.io/v1beta1
 kind: ControlCenter

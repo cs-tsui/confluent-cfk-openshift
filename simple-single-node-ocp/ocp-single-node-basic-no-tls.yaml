@@ -111,3 +111,58 @@ spec:
     connect:
     - name: connect-dev
       url:  http://connect.confluent.svc.cluster.local:8083
+
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: Connect
+metadata:
+  name: connect
+  namespace: confluent
+spec:
+  configOverrides:
+    server:
+    - confluent.topic.replication.factor=1
+    - config.storage.replication.factor=1
+    - offset.storage.replication.factor=1
+    - status.storage.replication.factor=1
+    - confluent.metadata.enable.server.urls.refresh=false
+  replicas: 1
+  build:
+    type: onDemand
+    onDemand:
+      plugins:
+        locationType: confluentHub
+        confluentHub:
+          - name: kafka-connect-datagen
+            owner: confluentinc
+            version: 0.6.4
+          - name: debezium-connector-mysql
+            owner: debezium
+            version: 2.2.1
+          - name: kafka-connect-jdbc
+            owner: confluentinc
+            version: 10.7.5
+          - name: kafka-connect-transform-record2jsonstring
+            owner: an0r0c
+            version: "1.4"
+  image:
+    application: confluentinc/cp-server-connect:7.5.3
+    init: confluentinc/confluent-init-container:2.7.3
+  podTemplate:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+    podSecurityContext: {}
+  dependencies:
+    kafka:
+      bootstrapEndpoint: kafka.confluent.svc.cluster.local:9071
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaRestClass
+metadata:
+  name: default
+  namespace: confluent
+spec:
+  kafkaClusterRef:
+    name: kafka
